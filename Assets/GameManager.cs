@@ -5,14 +5,14 @@ using TMPro;
 public class GameManager : MonoBehaviour
 {
     
-    public Transform[] unselectedCardSlots;
-    public Transform[] selectedCardSlots;
-    public Transform[] enemySelectedCardSlots;
+    public List<PlayerCardSlot> unselectedCardSlots = new List<PlayerCardSlot>();
+    public List<PlayerCardSlot> selectedCardSlots = new List<PlayerCardSlot>();
+    public List<PlayerCardSlot> enemySelectedCardSlots = new List<PlayerCardSlot>();    
     public Transform discardPile;
     private Card[] selectedCards = new Card[2];
     [SerializeField] private Card[] enemySelectedCards = new Card[2];
-    public bool[] availableCardSlots;
-    public bool[] availableSelectedCardSlots;
+    
+    
     public TMP_Text deckSizeText;
     public TMP_Text playerHealth;
     public TMP_Text enemyHealth;
@@ -38,38 +38,40 @@ public class GameManager : MonoBehaviour
         if (player.deck.Count >= 1)
         {
             Card randCard = player.deck[Random.Range(0, player.deck.Count)];
-            for (int i = 0; i < availableCardSlots.Length; i++)
+            for (int i = 0; i < unselectedCardSlots.Count; i++)
             {
-                if (availableCardSlots[i] == true)
+                if (unselectedCardSlots[i].isOccupied == false)
                 {
                     randCard.gameObject.SetActive(true);
                     randCard.handIndex = i;
+                    unselectedCardSlots[i].addCard(randCard);
                     
-                    randCard.transform.position = unselectedCardSlots[i].position;
-                    availableCardSlots[i] = false;
                     player.deck.Remove(randCard);
                     return;
                 }
             }
         }
     }
-    public void selectCard(Card card)
+    public void selectCard(PlayerCardSlot slot)
     {
-        for(int i = 0; i < availableSelectedCardSlots.Length; i++){
-            if(availableSelectedCardSlots[i] == true){
+        if(slot.isOccupied == false){
+            return;
+        }
+        Card card = slot.card;
+        for(int i = 0; i < selectedCardSlots.Count; i++){
+            if(selectedCardSlots[i].isOccupied == false){
                 card.gameObject.SetActive(true);
                 card.selectedIndex = i;
-                selectedCards[i] = card;
-                card.transform.position = selectedCardSlots[i].position;
-                availableSelectedCardSlots[i] = false;
+                selectedCardSlots[i].addCard(card);
+                slot.isPlayed = true;
                 return;
             }
         }
     }
     private bool validTurn(){
-        int cardCount = availableCardSlots.Length;
-        for(int i = 0;i < availableSelectedCardSlots.Length;i++){
-            if(availableSelectedCardSlots[i]){
+        int cardCount = selectedCardSlots.Count;
+        for(int i = 0;i < selectedCardSlots.Count;i++){
+            if(selectedCardSlots[i].isOccupied == false){
                 cardCount--;
             }
 
@@ -85,7 +87,7 @@ public class GameManager : MonoBehaviour
             return;
         }
         for(int i=0;i<2;i++){
-            Card playerCard = selectedCards[i];
+            Card playerCard = selectedCardSlots[i].card;
             Card enemyCard = enemySelectedCards[i];
             duel(playerCard,enemyCard);
         }
@@ -106,6 +108,10 @@ public class GameManager : MonoBehaviour
         }*/
         
         endTurn();
+        bool win = checkWin();
+        if(win){
+            Debug.Log("You Win!");
+        }
        
     }
     private void duel(Card pCard, Card eCard){
@@ -139,23 +145,37 @@ public class GameManager : MonoBehaviour
 
     }
     private void endTurn(){
-        for(int i = 0; i < selectedCards.Length; i++){
-            if(selectedCards[i] != null){
-                selectedCards[i].transform.position = discardPile.position;
-                availableSelectedCardSlots[i] = true;
-                availableCardSlots[selectedCards[i].handIndex] = true;
-                selectedCards[i].handIndex = -1;
-                selectedCards[i] = null;
+        for(int i = 0; i < selectedCardSlots.Count; i++){
+            if(selectedCardSlots[i].isOccupied){
+                selectedCardSlots[i].card.transform.position = discardPile.position;
+                selectedCardSlots[i].card.handIndex = -1;
+                selectedCardSlots[i].card.gameObject.SetActive(false);
+                selectedCardSlots[i].removeCard();
             }
         }
+        for(int i = 0; i < unselectedCardSlots.Count; i++){
+            if(unselectedCardSlots[i].isOccupied && unselectedCardSlots[i].isPlayed){
+                unselectedCardSlots[i].card.handIndex = -1;
+                unselectedCardSlots[i].card.gameObject.SetActive(false);
+                unselectedCardSlots[i].isPlayed = false;
+                unselectedCardSlots[i].removeCard();
+            }
+
+        }
         
+    }
+    private bool checkWin(){
+        if(enemy.entity.getCurrentHp() <= 0){
+            return true;
+        }
+        return false;
     }
 
 
     void Start()
     {
-        for(int i = 0;i<enemySelectedCardSlots.Length;i++){
-            enemySelectedCards[i].transform.position = enemySelectedCardSlots[i].position;
+        for(int i = 0;i<enemySelectedCardSlots.Count;i++){
+            enemySelectedCards[i].transform.position = enemySelectedCardSlots[i].slotTransform.position;
         
         }
         

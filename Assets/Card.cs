@@ -24,16 +24,7 @@ public class Card : MonoBehaviour
         cardText.text = $"DMG: {damage.ToString()}\nCOST: {manaCost.ToString()}";
         
     }
-    public void OnMouseDown()
-    {
-        print("clicked on card");
-        if (isSelected == false && selectable){
-            isSelected = true;
-            GameManager.Instance.selectCard(this);
-        }
-
-
-    }
+    
 
     // Update is called once per frame
     void Update()
